@@ -1,0 +1,11 @@
+dependencies:
+  override:
+    - pip install -r requirements.txt
+test:
+  override:
+    - nose2 -v
+deployment:
+  production:
+    branch: master
+    commands:
+      - bash ./deploy.sh
