@@ -1,3 +1,5 @@
 nose
 nose2
 awscli
+mock
+boto3
