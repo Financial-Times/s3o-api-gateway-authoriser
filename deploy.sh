@@ -1,2 +1,2 @@
-zip authoriser.zip authoriser.py
-aws lambda update-function-code --zip-file fileb://authoriser.zip --function-name s3o-api-gateway-custom-authoriser --publish --region eu-west-1
+zip authoriser.zip authoriser.py awspolicy.py && \
+aws lambda update-function-code --zip-file fileb://authoriser.zip --function-name s3o-api-gateway-custom-authoriser --publish --region eu-west-1 && aws s3 mv authoriserx§.zip s3://lantern-api-lambda
