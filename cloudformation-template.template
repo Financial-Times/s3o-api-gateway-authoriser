@@ -1,0 +1,233 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "s3bucketName": {
+      "Type": "String",
+      "Default": "lantern-api-lambda"
+    }
+  },
+  "Resources": {
+    "LanternApiGateway": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Description": "Lantern api gateway",
+        "Name": "lantern-api-gateway"
+      }
+    },
+    "ProxyResource": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] },
+        "PathPart": "{proxy+}",
+        "RestApiId": {"Ref": "LanternApiGateway"}
+      }
+    },
+    "ProxyMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "ResourceId": { "Ref": "ProxyResource" },
+        "HttpMethod": "ANY",
+        "RequestParameters": {
+          "method.request.header.Authorization": true,
+          "method.request.path.proxy": true
+        },
+        "AuthorizationType": "CUSTOM",
+        "AuthorizerId": {
+          "Ref": "LanternApigatewayAuthoriser"
+        },
+        "Integration": {
+          "Type": "HTTP",
+          "IntegrationHttpMethod": "ANY",
+          "Uri": "https://${stageVariables.endpoint}/{proxy}",
+          "RequestParameters": {
+            "integration.request.header.Authorization": "'ft-editorial-lantern-api-stg.herokuapp.com'",
+            "integration.request.path.proxy": "method.request.path.proxy"
+          }
+        }
+      }
+    },
+    "OptionsMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "ResourceId": { "Ref": "ProxyResource" },
+        "HttpMethod": "OPTIONS",
+        "RequestParameters": {
+          "method.request.header.Authorization": true,
+          "method.request.path.proxy": true
+        },
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "Type": "MOCK"
+        }
+      }
+    },
+    "LanternApigatewayAuthoriser": {
+      "Type": "AWS::ApiGateway::Authorizer",
+      "Properties": {
+        "AuthorizerResultTtlInSeconds": 300,
+        "AuthorizerUri": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:aws:apigateway:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":lambda:path/2015-03-31/functions/",
+              {
+                "Fn::GetAtt": [
+                  "S3oApiGatewayAuthoriser",
+                  "Arn"
+                ]
+              },
+              "/invocations"
+            ]
+          ]
+        },
+        "IdentitySource": "method.request.header.Authorization",
+        "IdentityValidationExpression": ".*",
+        "Name": "s3o-authoriser",
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "Type": "TOKEN"
+      }
+    },
+    "ProdStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "StageName": "Prod",
+        "Description": "Prod Stage",
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "DeploymentId": {
+          "Ref": "ProdDeployment"
+        },
+        "Variables": {
+          "endpoint": "ft-editorial-lantern-api.herokuapp.com"
+        }
+      }
+    },
+    "StageStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "StageName": "Stage",
+        "Description": "Staging Stage",
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "DeploymentId": {
+          "Ref": "StageDeployment"
+        },
+        "Variables": {
+          "endpoint": "ft-editorial-lantern-api-stg.herokuapp.com"
+        }
+      }
+    },
+    "ProdDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["OptionsMethod", "ProxyMethod"],
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "Description": "Prod deployment",
+        "StageName": "ProdDeploy"
+      }
+    },
+    "StageDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["OptionsMethod", "ProxyMethod"],
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "Description": "Stage deployment",
+        "StageName": "StageDeploy"
+      }
+    },
+    "LanternApiGatewayKeyStore": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "apiId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "apiKey",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "apiId",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "apiKey",
+            "KeyType": "RANGE"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": "5",
+          "WriteCapacityUnits": "5"
+        },
+        "TableName": "lantern_api_gateway_key_store"
+      }
+    },
+    "S3oApiGatewayAuthoriser": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "authoriser.lambda_handler",
+        "Role": { "Fn::Join" : [ ":", [ "arn:aws:iam:", { "Ref" : "AWS::AccountId" }, "role/FTApplicationRoleFor_lantern" ] ] },
+        "Code": {
+          "S3Bucket": { "Ref": "s3bucketName"},
+          "S3Key": "authoriser.zip"
+        },
+        "Runtime": "python2.7",
+        "Timeout": "180",
+        "MemorySize": 128
+      }
+    }
+  },
+  "Outputs": {
+    "LambdaName": {
+      "Value": {
+        "Ref": "S3oApiGatewayAuthoriser"
+      },
+      "Description": "The Lambda function"
+    },
+    "TableName": {
+      "Value": {
+        "Ref": "LanternApiGatewayKeyStore"
+      },
+      "Description": "The DynamoDB table"
+    },
+    "MainAPI": {
+      "Value": {
+        "Ref": "LanternApiGateway"
+      },
+      "Description": "The main API gateway"
+    },
+    "ProdDeployment": {
+      "Value": {
+        "Ref": "ProdDeployment"
+      },
+      "Description": "The deployment of the API"
+    },
+    "StageDeployment": {
+      "Value": {
+        "Ref": "StageDeployment"
+      },
+      "Description": "The deployment of the API"
+    }
+  }
+}
