@@ -131,58 +131,6 @@
         }
       }
     },
-    "ProdDeployment": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "DependsOn": ["OptionsMethod", "ProxyMethod"],
-      "Properties": {
-        "RestApiId": {
-          "Ref": "LanternApiGateway"
-        },
-        "Description": "Prod deployment",
-        "StageName": "ProdDeploy"
-      }
-    },
-    "StageDeployment": {
-      "Type": "AWS::ApiGateway::Deployment",
-      "DependsOn": ["OptionsMethod", "ProxyMethod"],
-      "Properties": {
-        "RestApiId": {
-          "Ref": "LanternApiGateway"
-        },
-        "Description": "Stage deployment",
-        "StageName": "StageDeploy"
-      }
-    },
-    "LanternApiGatewayKeyStore": {
-      "Type": "AWS::DynamoDB::Table",
-      "Properties": {
-        "AttributeDefinitions": [
-          {
-            "AttributeName": "apiId",
-            "AttributeType": "S"
-          },
-          {
-            "AttributeName": "apiKey",
-            "AttributeType": "S"
-          }
-        ],
-        "KeySchema": [
-          {
-            "AttributeName": "apiId",
-            "KeyType": "HASH"
-          },
-          {
-            "AttributeName": "apiKey",
-            "KeyType": "RANGE"
-          }
-        ],
-        "ProvisionedThroughput": {
-          "ReadCapacityUnits": "5",
-          "WriteCapacityUnits": "5"
-        },
-        "TableName": "lantern_api_gateway_key_store"
-      }
-    },
     "S3oApiGatewayAuthoriser": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
@@ -205,29 +153,11 @@
       },
       "Description": "The Lambda function"
     },
-    "TableName": {
-      "Value": {
-        "Ref": "LanternApiGatewayKeyStore"
-      },
-      "Description": "The DynamoDB table"
-    },
     "MainAPI": {
       "Value": {
         "Ref": "LanternApiGateway"
       },
       "Description": "The main API gateway"
-    },
-    "ProdDeployment": {
-      "Value": {
-        "Ref": "ProdDeployment"
-      },
-      "Description": "The deployment of the API"
-    },
-    "StageDeployment": {
-      "Value": {
-        "Ref": "StageDeployment"
-      },
-      "Description": "The deployment of the API"
     }
   }
 }
