@@ -1,17 +1,11 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Parameters": {
-    "s3bucketName": {
-      "Type": "String",
-      "Default": "lantern-api-lambda"
-    }
-  },
   "Resources": {
     "LanternApiGateway": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
         "Description": "Lantern api gateway",
-        "Name": "lantern-api-gateway"
+        "Name": "lantern-api-gateway-dev"
       }
     },
     "ProxyResource": {
@@ -31,13 +25,11 @@
         "ResourceId": { "Ref": "ProxyResource" },
         "HttpMethod": "ANY",
         "RequestParameters": {
-          "method.request.header.Authorization": true,
+          "method.request.header.x-api-key": true,
           "method.request.path.proxy": true
         },
-        "AuthorizationType": "CUSTOM",
-        "AuthorizerId": {
-          "Ref": "LanternApigatewayAuthoriser"
-        },
+        "AuthorizationType": "NONE",
+        "ApiKeyRequired": true,
         "Integration": {
           "Type": "HTTP",
           "IntegrationHttpMethod": "ANY",
@@ -58,45 +50,13 @@
         "ResourceId": { "Ref": "ProxyResource" },
         "HttpMethod": "OPTIONS",
         "RequestParameters": {
-          "method.request.header.Authorization": true,
+          "method.request.header.x-api-key": true,
           "method.request.path.proxy": true
         },
         "AuthorizationType": "NONE",
         "Integration": {
           "Type": "MOCK"
         }
-      }
-    },
-    "LanternApigatewayAuthoriser": {
-      "Type": "AWS::ApiGateway::Authorizer",
-      "Properties": {
-        "AuthorizerResultTtlInSeconds": 300,
-        "AuthorizerUri": {
-          "Fn::Join": [
-            "",
-            [
-              "arn:aws:apigateway:",
-              {
-                "Ref": "AWS::Region"
-              },
-              ":lambda:path/2015-03-31/functions/",
-              {
-                "Fn::GetAtt": [
-                  "S3oApiGatewayAuthoriser",
-                  "Arn"
-                ]
-              },
-              "/invocations"
-            ]
-          ]
-        },
-        "IdentitySource": "method.request.header.Authorization",
-        "IdentityValidationExpression": ".*",
-        "Name": "s3o-authoriser",
-        "RestApiId": {
-          "Ref": "LanternApiGateway"
-        },
-        "Type": "TOKEN"
       }
     },
     "ProdStage": {
@@ -131,33 +91,47 @@
         }
       }
     },
-    "S3oApiGatewayAuthoriser": {
-      "Type": "AWS::Lambda::Function",
+    "ProdDeployment": {
+       "Type": "AWS::ApiGateway::Deployment",
+       "DependsOn": ["OptionsMethod", "ProxyMethod"],
+       "Properties": {
+         "RestApiId": {
+            "Ref": "LanternApiGateway"
+         },
+         "Description": "Prod deployment",
+         "StageName": "ProdDeploy"
+       }
+    },
+    "StageDeployment": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["OptionsMethod", "ProxyMethod"],
       "Properties": {
-        "Handler": "authoriser.lambda_handler",
-        "Role": { "Fn::Join" : [ ":", [ "arn:aws:iam:", { "Ref" : "AWS::AccountId" }, "role/FTApplicationRoleFor_lantern" ] ] },
-        "Code": {
-          "S3Bucket": { "Ref": "s3bucketName"},
-          "S3Key": "authoriser.zip"
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
         },
-        "Runtime": "python2.7",
-        "Timeout": "180",
-        "MemorySize": 128
+        "Description": "Stage deployment",
+        "StageName": "StageDeploy"
       }
     }
   },
   "Outputs": {
-    "LambdaName": {
-      "Value": {
-        "Ref": "S3oApiGatewayAuthoriser"
-      },
-      "Description": "The Lambda function"
-    },
     "MainAPI": {
       "Value": {
         "Ref": "LanternApiGateway"
       },
       "Description": "The main API gateway"
+    },
+    "StageEndpoint": {
+      "Value": {
+        "Ref": "StageStage"
+      },
+      "Description": "Stage original application endpoint"
+    },
+    "ProdEndpoint": {
+       "Value": {
+          "Ref": "ProdStage"
+       },
+       "Description": "Prod original application endpoint"
     }
   }
 }
