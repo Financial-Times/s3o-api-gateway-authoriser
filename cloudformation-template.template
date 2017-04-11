@@ -5,7 +5,7 @@
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
         "Description": "Lantern api gateway",
-        "Name": "lantern-api-gateway-dev"
+        "Name": "lantern-api-gateway-php-591"
       }
     },
     "ProxyResource": {
@@ -35,7 +35,8 @@
           "IntegrationHttpMethod": "ANY",
           "Uri": "https://${stageVariables.endpoint}/{proxy}",
           "RequestParameters": {
-            "integration.request.header.Authorization": "'ft-editorial-lantern-api-stg.herokuapp.com'",
+            "integration.request.header.Host": "'ft-editorial-lantern-api-stg.herokuapp.com'",
+            "integration.request.header.x-api-token": "'12345678'",
             "integration.request.path.proxy": "method.request.path.proxy"
           }
         }
@@ -112,6 +113,44 @@
         "Description": "Stage deployment",
         "StageName": "StageDeploy"
       }
+    },
+    "ApiKey": {
+      "Type": "AWS::ApiGateway::ApiKey",
+      "DependsOn": ["StageDeployment", "StageStage"],
+      "Properties": {
+        "Name": "StageApiKey",
+        "Description": "Lantern API Key V1",
+        "Enabled": "true",
+        "StageKeys": [{
+           "RestApiId": { "Ref": "LanternApiGateway" },
+           "StageName": {"Ref":"StageStage"}
+        }]
+      }
+    },
+    "UsagePlan" : {
+      "Type" : "AWS::ApiGateway::UsagePlan",
+      "Properties" : {
+        "ApiStages" : [ {"ApiId" : { "Ref" : "LanternApiGateway" }, "Stage" : { "Ref" : "StageStage" }} ],
+        "Description" : "Lantern APIGateway usage plan",
+        "Quota" : {
+          "Limit" : 1000,
+          "Period" : "MONTH"
+        },
+        "Throttle" : {
+          "BurstLimit" : 200,
+          "RateLimit" : 100
+        },
+        "UsagePlanName" : "Lantern_API_PLAN"
+      }
+    },
+    "UsagePlanKey" : {
+      "Type": "AWS::ApiGateway::UsagePlanKey",
+      "DependsOn": ["ApiKey", "UsagePlan"],
+      "Properties": {
+        "KeyId" : {"Ref" : "ApiKey"},
+        "KeyType" : "API_KEY",
+        "UsagePlanId" : {"Ref" : "UsagePlan"}
+      }
     }
   },
   "Outputs": {
@@ -122,15 +161,11 @@
       "Description": "The main API gateway"
     },
     "StageEndpoint": {
-      "Value": {
-        "Ref": "StageStage"
-      },
+      "Value": "ft-editorial-lantern-api-stg.herokuapp.com",
       "Description": "Stage original application endpoint"
     },
     "ProdEndpoint": {
-       "Value": {
-          "Ref": "ProdStage"
-       },
+       "Value": "ft-editorial-lantern-api.herokuapp.com",
        "Description": "Prod original application endpoint"
     }
   }
