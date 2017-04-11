@@ -16,6 +16,50 @@
         "RestApiId": {"Ref": "LanternApiGateway"}
       }
     },
+    "TopAnyMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "ResourceId": { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] },
+        "HttpMethod": "ANY",
+        "RequestParameters": {
+          "method.request.header.x-api-key": true,
+          "method.request.path.proxy": true
+        },
+        "AuthorizationType": "NONE",
+        "ApiKeyRequired": true,
+        "Integration": {
+          "Type": "HTTP",
+          "IntegrationHttpMethod": "ANY",
+          "Uri": "https://${stageVariables.endpoint}/{proxy}",
+          "RequestParameters": {
+            "integration.request.header.Host": "'ft-editorial-lantern-api-stg.herokuapp.com'",
+            "integration.request.header.x-api-token": "'12345678'",
+            "integration.request.path.proxy": "method.request.path.proxy"
+          }
+        }
+      }
+    },
+    "TopOptionsMethod": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "ResourceId": { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] },
+        "HttpMethod": "OPTIONS",
+        "RequestParameters": {
+          "method.request.header.x-api-key": true,
+          "method.request.path.proxy": true
+        },
+        "AuthorizationType": "NONE",
+          "Integration": {
+            "Type": "MOCK"
+         }
+      }
+    },
     "ProxyMethod": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
