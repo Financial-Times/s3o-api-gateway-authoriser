@@ -1,5 +1,22 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters" : {
+    "OriginAPIToken" : {
+      "Type" : "String",
+      "Default" : "'12345678'",
+      "Description" : "This will be used to connect to the origin API endpoint as x-api-token in the header"
+    },
+    "StageOriginAPIEndpoint" : {
+      "Type": "String",
+      "Default": "ft-editorial-lantern-api-stg.herokuapp.com",
+      "Description" : "This is the origin API endpoint for Stage"
+    },
+    "ProdOriginAPIEndpoint" : {
+      "Type": "String",
+      "Default": "ft-editorial-lantern-api.herokuapp.com",
+      "Description" : "This is the origin API endpoint for Prod"
+    }
+  },
   "Resources": {
     "LanternApiGateway": {
       "Type": "AWS::ApiGateway::RestApi",
@@ -38,8 +55,8 @@
           "IntegrationHttpMethod": "ANY",
           "Uri": "https://${stageVariables.endpoint}/",
           "RequestParameters": {
-            "integration.request.header.Host": "'ft-editorial-lantern-api-stg.herokuapp.com'",
-            "integration.request.header.x-api-token": "'12345678'",
+            "integration.request.header.Host": "stageVariables.endpoint",
+            "integration.request.header.x-api-token": {"Ref": "OriginAPIToken"},
           }
         }
       }
@@ -81,8 +98,8 @@
           "IntegrationHttpMethod": "ANY",
           "Uri": "https://${stageVariables.endpoint}/{proxy}",
           "RequestParameters": {
-            "integration.request.header.Host": "'ft-editorial-lantern-api-stg.herokuapp.com'",
-            "integration.request.header.x-api-token": "'12345678'",
+            "integration.request.header.Host": "stageVariables.endpoint",
+            "integration.request.header.x-api-token": {"Ref": "OriginAPIToken"},
             "integration.request.path.proxy": "method.request.path.proxy"
           }
         }
@@ -118,12 +135,13 @@
           "Ref": "ProdDeployment"
         },
         "Variables": {
-          "endpoint": "ft-editorial-lantern-api.herokuapp.com"
+          "endpoint": {"Ref": "ProdOriginAPIEndpoint"}
         }
       }
     },
     "StageStage": {
       "Type": "AWS::ApiGateway::Stage",
+      "DependsOn": ["ProdDeployment", "ProdStage"],
       "Properties": {
         "StageName": "Stage",
         "Description": "Staging Stage",
@@ -134,7 +152,7 @@
           "Ref": "StageDeployment"
         },
         "Variables": {
-          "endpoint": "ft-editorial-lantern-api-stg.herokuapp.com"
+          "endpoint": {"Ref": "StageOriginAPIEndpoint"}
         }
       }
     },
@@ -160,12 +178,12 @@
         "StageName": "StageDeploy"
       }
     },
-    "ApiKey": {
+    "StageApiKey": {
       "Type": "AWS::ApiGateway::ApiKey",
       "DependsOn": ["StageDeployment", "StageStage"],
       "Properties": {
         "Name": "StageApiKey",
-        "Description": "Lantern API Key V1",
+        "Description": "Stage Lantern API Key V1",
         "Enabled": "true",
         "StageKeys": [{
            "RestApiId": { "Ref": "LanternApiGateway" },
@@ -173,11 +191,24 @@
         }]
       }
     },
-    "UsagePlan" : {
+    "ProdApiKey": {
+      "Type": "AWS::ApiGateway::ApiKey",
+      "DependsOn": ["ProdDeployment", "ProdStage"],
+      "Properties": {
+        "Name": "ProdApiKey",
+        "Description": "Prod Lantern API Key V1",
+        "Enabled": "true",
+        "StageKeys": [{
+          "RestApiId": { "Ref": "LanternApiGateway" },
+          "StageName": {"Ref":"ProdStage"}
+        }]
+      }
+    },
+    "StageUsagePlan" : {
       "Type" : "AWS::ApiGateway::UsagePlan",
       "Properties" : {
         "ApiStages" : [ {"ApiId" : { "Ref" : "LanternApiGateway" }, "Stage" : { "Ref" : "StageStage" }} ],
-        "Description" : "Lantern APIGateway usage plan",
+        "Description" : "Stage Lantern APIGateway usage plan",
         "Quota" : {
           "Limit" : 1000,
           "Period" : "MONTH"
@@ -186,16 +217,41 @@
           "BurstLimit" : 200,
           "RateLimit" : 100
         },
-        "UsagePlanName" : "Lantern_API_PLAN"
+        "UsagePlanName" : "Stage_Lantern_API_PLAN"
       }
     },
-    "UsagePlanKey" : {
+    "ProdUsagePlan" : {
+      "Type" : "AWS::ApiGateway::UsagePlan",
+      "Properties" : {
+        "ApiStages" : [ {"ApiId" : { "Ref" : "LanternApiGateway" }, "Stage" : { "Ref" : "ProdStage" }} ],
+        "Description" : "Prod Lantern APIGateway usage plan",
+        "Quota" : {
+          "Limit" : 1000,
+          "Period" : "MONTH"
+        },
+        "Throttle" : {
+          "BurstLimit" : 200,
+          "RateLimit" : 100
+        },
+        "UsagePlanName" : "Prod_Lantern_API_PLAN"
+      }
+    },
+    "StageUsagePlanKey" : {
       "Type": "AWS::ApiGateway::UsagePlanKey",
-      "DependsOn": ["ApiKey", "UsagePlan"],
+      "DependsOn": ["StageApiKey", "StageUsagePlan"],
       "Properties": {
-        "KeyId" : {"Ref" : "ApiKey"},
+        "KeyId" : {"Ref" : "StageApiKey"},
         "KeyType" : "API_KEY",
-        "UsagePlanId" : {"Ref" : "UsagePlan"}
+        "UsagePlanId" : {"Ref" : "StageUsagePlan"}
+      }
+    },
+    "ProdUsagePlanKey" : {
+      "Type": "AWS::ApiGateway::UsagePlanKey",
+      "DependsOn": ["ProdApiKey", "ProdUsagePlan"],
+      "Properties": {
+        "KeyId" : {"Ref" : "ProdApiKey"},
+        "KeyType" : "API_KEY",
+        "UsagePlanId" : {"Ref" : "ProdUsagePlan"}
       }
     }
   },
@@ -204,15 +260,23 @@
       "Value": {
         "Ref": "LanternApiGateway"
       },
-      "Description": "The main API gateway"
+      "Description": "The main API gateway ID"
     },
     "StageEndpoint": {
-      "Value": "ft-editorial-lantern-api-stg.herokuapp.com",
+      "Value": {"Ref": "StageOriginAPIEndpoint"},
       "Description": "Stage original application endpoint"
     },
+    "StageApiKey": {
+      "Value": {"Ref": "StageApiKey"},
+      "Description": "Stage API Key to use"
+    },
     "ProdEndpoint": {
-       "Value": "ft-editorial-lantern-api.herokuapp.com",
+       "Value": {"Ref": "ProdOriginAPIEndpoint"},
        "Description": "Prod original application endpoint"
+    },
+    "ProdApiKey": {
+      "Value": {"Ref": "ProdApiKey"},
+      "Description": "Prod API Key to use"
     }
   }
 }
