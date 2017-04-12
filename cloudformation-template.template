@@ -25,19 +25,21 @@
         "ResourceId": { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] },
         "HttpMethod": "ANY",
         "RequestParameters": {
-          "method.request.header.x-api-key": true,
-          "method.request.path.proxy": true
+          "method.request.header.x-api-key": true
         },
+        "MethodResponses": [{
+          "ResponseModels" : { "application/json":"Empty" },
+          "StatusCode" : '200'
+        }],
         "AuthorizationType": "NONE",
         "ApiKeyRequired": true,
         "Integration": {
-          "Type": "HTTP",
+          "Type": "HTTP_PROXY",
           "IntegrationHttpMethod": "ANY",
-          "Uri": "https://${stageVariables.endpoint}/{proxy}",
+          "Uri": "https://${stageVariables.endpoint}/",
           "RequestParameters": {
             "integration.request.header.Host": "'ft-editorial-lantern-api-stg.herokuapp.com'",
             "integration.request.header.x-api-token": "'12345678'",
-            "integration.request.path.proxy": "method.request.path.proxy"
           }
         }
       }
@@ -75,7 +77,7 @@
         "AuthorizationType": "NONE",
         "ApiKeyRequired": true,
         "Integration": {
-          "Type": "HTTP",
+          "Type": "HTTP_PROXY",
           "IntegrationHttpMethod": "ANY",
           "Uri": "https://${stageVariables.endpoint}/{proxy}",
           "RequestParameters": {
