@@ -3,8 +3,8 @@
   "Parameters" : {
     "OriginAPIToken" : {
       "Type" : "String",
-      "Default" : "'12345678'",
-      "Description" : "This will be used to connect to the origin API endpoint as x-api-token in the header"
+      "Default" : "12345678",
+      "Description" : "This will be used to connect to the origin API endpoint as x-api-token in the header."
     },
     "StageOriginAPIEndpoint" : {
       "Type": "String",
@@ -15,14 +15,19 @@
       "Type": "String",
       "Default": "ft-editorial-lantern-api.herokuapp.com",
       "Description" : "This is the origin API endpoint for Prod"
+    },
+    "LanternAPIGatewayName" : {
+       "Type": "String",
+       "Default": "lantern-api-gateway",
+       "Description" : "Lantern api gateway Name"
     }
   },
   "Resources": {
     "LanternApiGateway": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
-        "Description": "Lantern api gateway",
-        "Name": "lantern-api-gateway-php-591"
+        "Description": "Lantern API Gateway Stack",
+        "Name": {"Ref": "LanternAPIGatewayName"}
       }
     },
     "ProxyResource": {
@@ -56,7 +61,7 @@
           "Uri": "https://${stageVariables.endpoint}/",
           "RequestParameters": {
             "integration.request.header.Host": "stageVariables.endpoint",
-            "integration.request.header.x-api-token": {"Ref": "OriginAPIToken"},
+            "integration.request.header.x-api-token": {"Fn::Join": ["", ["'", {"Ref": "OriginAPIToken"}, "'"] ]},
           }
         }
       }
@@ -99,7 +104,7 @@
           "Uri": "https://${stageVariables.endpoint}/{proxy}",
           "RequestParameters": {
             "integration.request.header.Host": "stageVariables.endpoint",
-            "integration.request.header.x-api-token": {"Ref": "OriginAPIToken"},
+            "integration.request.header.x-api-token": {"Fn::Join": ["", ["'", {"Ref": "OriginAPIToken"}, "'"] ]},
             "integration.request.path.proxy": "method.request.path.proxy"
           }
         }
@@ -256,7 +261,7 @@
     }
   },
   "Outputs": {
-    "MainAPI": {
+    "MainAPIID": {
       "Value": {
         "Ref": "LanternApiGateway"
       },
@@ -277,6 +282,10 @@
     "ProdApiKey": {
       "Value": {"Ref": "ProdApiKey"},
       "Description": "Prod API Key to use"
+    },
+    "LanternAPIGatewayName": {
+       "Value": {"Ref": "LanternAPIGatewayName"},
+       "Description": "Lantern API Gateway Name"
     }
   }
 }
