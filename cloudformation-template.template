@@ -226,8 +226,8 @@
         "ApiStages" : [ {"ApiId" : { "Ref" : "LanternApiGateway" }, "Stage" : { "Ref" : "StageStage" }} ],
         "Description" : "Stage Lantern APIGateway usage plan",
         "Quota" : {
-          "Limit" : 1000,
-          "Period" : "MONTH"
+          "Limit" : 10000,
+          "Period" : "WEEK"
         },
         "Throttle" : {
           "BurstLimit" : 200,
@@ -242,11 +242,11 @@
         "ApiStages" : [ {"ApiId" : { "Ref" : "LanternApiGateway" }, "Stage" : { "Ref" : "ProdStage" }} ],
         "Description" : "Prod Lantern APIGateway usage plan",
         "Quota" : {
-          "Limit" : 1000,
-          "Period" : "MONTH"
+          "Limit" : 10000,
+          "Period" : "DAY"
         },
         "Throttle" : {
-          "BurstLimit" : 200,
+          "BurstLimit" : 300,
           "RateLimit" : 100
         },
         "UsagePlanName" : {"Fn::Join": ["_", ["Prod_Lantern_API_PLAN", { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] }] ]}
