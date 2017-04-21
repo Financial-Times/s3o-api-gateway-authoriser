@@ -3,23 +3,34 @@
   "Parameters" : {
     "OriginAPIToken" : {
       "Type" : "String",
-      "Default" : "12345678",
-      "Description" : "This will be used to connect to the origin API endpoint as x-api-token in the header."
+      "Description" : "This will be used to connect to the origin API endpoint as x-api-token in the header.",
+      "MinLength": "1",
+      "AllowedPattern" : ".+",
+      "ConstraintDescription" : "Cannot be empty!"
     },
     "StageOriginAPIEndpoint" : {
       "Type": "String",
       "Default": "ft-editorial-lantern-api-stg.herokuapp.com",
-      "Description" : "This is the origin API endpoint for Stage"
+      "Description" : "This is the origin API endpoint for Stage",
+      "MinLength": "1",
+      "AllowedPattern" : ".+",
+      "ConstraintDescription" : "Cannot be empty!"
     },
     "ProdOriginAPIEndpoint" : {
       "Type": "String",
       "Default": "ft-editorial-lantern-api.herokuapp.com",
-      "Description" : "This is the origin API endpoint for Prod"
+      "Description" : "This is the origin API endpoint for Prod",
+      "MinLength": "1",
+      "AllowedPattern" : ".+",
+      "ConstraintDescription" : "Cannot be empty!"
     },
     "LanternAPIGatewayName" : {
        "Type": "String",
        "Default": "lantern-api-gateway",
-       "Description" : "Lantern api gateway Name"
+       "Description" : "Lantern api gateway Name",
+       "MinLength": "1",
+       "AllowedPattern" : ".+",
+       "ConstraintDescription" : "Cannot be empty!"
     }
   },
   "Resources": {
@@ -187,7 +198,7 @@
       "Type": "AWS::ApiGateway::ApiKey",
       "DependsOn": ["StageDeployment", "StageStage"],
       "Properties": {
-        "Name": "StageApiKey",
+        "Name": {"Fn::Join": ["-", ["StageApiKey", { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] }] ]},
         "Description": "Stage Lantern API Key V1",
         "Enabled": "true",
         "StageKeys": [{
@@ -200,7 +211,7 @@
       "Type": "AWS::ApiGateway::ApiKey",
       "DependsOn": ["ProdDeployment", "ProdStage"],
       "Properties": {
-        "Name": "ProdApiKey",
+        "Name": {"Fn::Join": ["-", ["ProdApiKey", { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] }] ]},
         "Description": "Prod Lantern API Key V1",
         "Enabled": "true",
         "StageKeys": [{
@@ -222,7 +233,7 @@
           "BurstLimit" : 200,
           "RateLimit" : 100
         },
-        "UsagePlanName" : "Stage_Lantern_API_PLAN"
+        "UsagePlanName" : {"Fn::Join": ["_", ["Stage_Lantern_API_PLAN", { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] }] ]}
       }
     },
     "ProdUsagePlan" : {
@@ -238,7 +249,7 @@
           "BurstLimit" : 200,
           "RateLimit" : 100
         },
-        "UsagePlanName" : "Prod_Lantern_API_PLAN"
+        "UsagePlanName" : {"Fn::Join": ["_", ["Prod_Lantern_API_PLAN", { "Fn::GetAtt": ["LanternApiGateway", "RootResourceId"] }] ]}
       }
     },
     "StageUsagePlanKey" : {
