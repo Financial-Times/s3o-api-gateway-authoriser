@@ -1,5 +1,5 @@
 {
-  "AWSTemplateFormatVersion": "2010-09-09",
+  "AWSTemplateFormatVersion": "2017-04-20",
   "Parameters" : {
     "OriginAPIToken" : {
       "Type" : "String",
@@ -25,12 +25,12 @@
       "ConstraintDescription" : "Cannot be empty!"
     },
     "LanternAPIGatewayName" : {
-       "Type": "String",
-       "Default": "lantern-api-gateway",
-       "Description" : "Lantern api gateway Name",
-       "MinLength": "1",
-       "AllowedPattern" : ".+",
-       "ConstraintDescription" : "Cannot be empty!"
+      "Type": "String",
+      "Default": "lantern-api-gateway",
+      "Description" : "Lantern api gateway Name",
+      "MinLength": "1",
+      "AllowedPattern" : ".+",
+      "ConstraintDescription" : "Cannot be empty!"
     }
   },
   "Resources": {
@@ -90,9 +90,9 @@
           "method.request.path.proxy": true
         },
         "AuthorizationType": "NONE",
-          "Integration": {
-            "Type": "MOCK"
-         }
+        "Integration": {
+          "Type": "MOCK"
+        }
       }
     },
     "ProxyMethod": {
@@ -173,15 +173,15 @@
       }
     },
     "ProdDeployment": {
-       "Type": "AWS::ApiGateway::Deployment",
-       "DependsOn": ["OptionsMethod", "ProxyMethod"],
-       "Properties": {
-         "RestApiId": {
-            "Ref": "LanternApiGateway"
-         },
-         "Description": "Prod deployment",
-         "StageName": "ProdDeploy"
-       }
+      "Type": "AWS::ApiGateway::Deployment",
+      "DependsOn": ["OptionsMethod", "ProxyMethod"],
+      "Properties": {
+        "RestApiId": {
+          "Ref": "LanternApiGateway"
+        },
+        "Description": "Prod deployment",
+        "StageName": "ProdDeploy"
+      }
     },
     "StageDeployment": {
       "Type": "AWS::ApiGateway::Deployment",
@@ -202,8 +202,8 @@
         "Description": "Stage Lantern API Key V1",
         "Enabled": "true",
         "StageKeys": [{
-           "RestApiId": { "Ref": "LanternApiGateway" },
-           "StageName": {"Ref":"StageStage"}
+          "RestApiId": { "Ref": "LanternApiGateway" },
+          "StageName": {"Ref":"StageStage"}
         }]
       }
     },
@@ -287,16 +287,16 @@
       "Description": "Stage API Key to use"
     },
     "ProdEndpoint": {
-       "Value": {"Ref": "ProdOriginAPIEndpoint"},
-       "Description": "Prod original application endpoint"
+      "Value": {"Ref": "ProdOriginAPIEndpoint"},
+      "Description": "Prod original application endpoint"
     },
     "ProdApiKey": {
       "Value": {"Ref": "ProdApiKey"},
       "Description": "Prod API Key to use"
     },
     "LanternAPIGatewayName": {
-       "Value": {"Ref": "LanternAPIGatewayName"},
-       "Description": "Lantern API Gateway Name"
+      "Value": {"Ref": "LanternAPIGatewayName"},
+      "Description": "Lantern API Gateway Name"
     }
   }
 }
