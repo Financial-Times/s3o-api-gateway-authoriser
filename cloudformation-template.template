@@ -1,5 +1,5 @@
 {
-  "AWSTemplateFormatVersion": "2017-04-20",
+  "AWSTemplateFormatVersion": "2010-09-09",
   "Parameters" : {
     "OriginAPIToken" : {
       "Type" : "String",
@@ -62,7 +62,7 @@
         },
         "MethodResponses": [{
           "ResponseModels" : { "application/json":"Empty" },
-          "StatusCode" : '200'
+          "StatusCode" : 200
         }],
         "AuthorizationType": "NONE",
         "ApiKeyRequired": true,
